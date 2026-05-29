@@ -10,11 +10,22 @@ def preprocess_image(image_path):
     # Read the image
     img = cv2.imread(image_path)
 
+    # Debugging Block
     if img is None:
-        raise FileNotFoundError(f"Could not load image!")
+        print(f"CRITICAL ERROR: Could not find image at '{image_path}'")
+        return None
+    print(f"Image loaded successfully! Shape: {img.shape}")
 
-    # 1. Convert to grayscale
-    gray = cv2.cvtColor(img, cv2.COLOR_BAYER_BG2GRAY)
+    # Force the image to be in the standard 8-bit format
+    # This prevents the 'srn' (source channel) assertion errors
+    if img.dtype != np.uint8:
+        img = img.astype(np.uint8)
+
+    # Check if image is already grayscale (has 2 dimensions, not 3)
+    if len(img.shape) == 3 and img.shape[2] == 3:
+        gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    else:
+        gray = img # It is already grayscale
 
     # 2. Apply Gaussian blur to reduce image noise
     # This helps the OCR engine focus on the shapes of the letters
