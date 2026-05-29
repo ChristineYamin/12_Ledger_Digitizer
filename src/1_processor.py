@@ -31,6 +31,12 @@ def preprocess_image(image_path):
     # This helps the OCR engine focus on the shapes of the letters
     blurred = cv2.GaussianBlur(gray, (5,5), 0)
 
+    kernel = np.array([[0, -1, 0],
+                       [-1, 5, -1],
+                       [0, -1, 0]
+                       ])
+    sharpened = cv2.filter2D(blurred, -1, kernel)
+
     # 3. Apply adaptive thresholding to get rid of shadows 
     # This makes the paper white and the ink black
     processed = cv2.adaptiveThreshold(
@@ -39,7 +45,14 @@ def preprocess_image(image_path):
         cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
         cv2.THRESH_BINARY, 11, 2
     )
+
+    # 4. clean up with Morphology
+    kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (2,2))
+    processed = cv2.dilate(processed, kernel, iterations=1)
+    processed = cv2.erode(processed, kernel, iterations=1)
+
     return processed
+
 
 # Test it
 if __name__ == "__main__":
