@@ -46,16 +46,8 @@ if __name__ == "__main__":
 
         # Save the result
         cv2.imwrite(output_path, cleaned_img)
-        print(f"Success! Cleaned image saved to" {output_path})
+        print(f"Success! Cleaned image saved to: {output_path}")
 
     except Exception as e:
         print(f"Error: {e}")
 
-
-
-
-
-    # Put a test image to verify this work
-    test_img = preprocess_image("C:/Projects/12_Ledger_Digitizer/data/handwritten ledgger.jpg")
-    cv2.imwrite("C:/Projects/12_Ledger_Digitizer/data/clean_test.jpg", test_img)
-    print("Pre-processing complete!")
