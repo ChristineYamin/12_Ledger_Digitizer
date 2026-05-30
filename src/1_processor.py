@@ -61,7 +61,7 @@ if __name__ == "__main__":
         os.makedirs("data")
 
     # set the path to image path
-    input_path = os.path.join("data", "handwritten ledgger.jpg")
+    input_path = os.path.join("data", "handwritten_ledgger.jpeg")
     output_path = os.path.join("data", "cleaned_ledger.png")
 
     try:
