@@ -1,27 +1,25 @@
 import easyocr
 import csv
+from paddleocr import PaddleOCR
 import os
 
 def extract_text(image_path):
     # Initialize the reader (only need to do this once)
-    reader = easyocr.Reader(['en'], gpu=False)
+    ocr = PaddleOCR(use_angle_cls=True, lang='en')
 
     # Run OCR on the cleaned image
     print(f"Reading text from {image_path}")
-    results = reader.readtext(image_path)
+    result = ocr.ocr(image_path, cls=True)
     extracted_data = []
-
-    # Process results
-    for (bbox, text, prob) in results:
+    
+    # Paddle OCR returns a nested list structure
+    for line in result[0]:
+        text = line[1][0]
+        prob = line[1][1]
         # Only care about high-confidence results
         if prob > 0.4:
-            # Check if the text contains digits (is a number)
-            if any(char.isdigit() for char in text):
-                extracted_data.append({'text': text, "confidence": prob})
-                print(f"Number Detected: {text} (Confidence: {prob:.2f})")
-
-            else:
-                print(f"Detected: {text} (Confidence: {prob:.2f})")
+            extracted_data.append({'text': text, 'confidence': prob})
+            print(f"Detected: {text} (Confidence: {prob:.2f})")
     return extracted_data
 
 def save_to_csv(data, output_file="data/ledger_results.csv"):
