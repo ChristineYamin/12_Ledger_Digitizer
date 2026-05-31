@@ -4,45 +4,32 @@ import os
 
 def slice_ledger_columns(image_path, output_dir="data/columns"):
     img = cv2.imread(image_path)
-    if img is None:
-        print(f"Error: Could not load {image_path}")
-        return
-        
-    height, width, _ = img.shape
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     
-    # Use Canny
-    edges = cv2.Canny(gray, 50, 150, apertureSize=3)
+    # 1. Binarize to find where the content is
+    _, binary = cv2.threshold(gray, 200, 255, cv2.THRESH_BINARY_INV)
     
-    # Relaxed parameters
-    lines = cv2.HoughLinesP(edges, 1, np.pi/180, threshold=50, 
-                            minLineLength=int(height * 0.5), # 50% is safer
-                            maxLineGap=20)
+    # 2. Sum the pixels vertically. Columns with no text will have near-zero values.
+    column_sums = np.sum(binary, axis=0)
     
-    # Safety Check: Did we actually find lines?
-    if lines is None:
-        print("No vertical lines detected! Try reducing the 'minLineLength' or 'threshold'.")
-        return
+    # 3. Find gaps (where column_sums are near zero)
+    gaps = np.where(column_sums < 500)[0] # Threshold for "empty" space
     
-    # Collect X-coords
-    x_coords = sorted(list(set([line[0][0] for line in lines])))
+    # 4. Identify column breaks
+    breaks = [0]
+    for i in range(1, len(gaps)):
+        if gaps[i] - gaps[i-1] > 50: # Minimum column width
+            breaks.append(gaps[i])
+    breaks.append(img.shape[1])
     
-    # Filter: Keep lines spaced at least 50 pixels apart
-    filtered_x = [x_coords[0]]
-    for x in x_coords[1:]:
-        if x - filtered_x[-1] > 50:
-            filtered_x.append(x)
-            
-    print(f"Detected {len(filtered_x)} columns.")
-    
-    if not os.path.exists(output_dir):
-        os.makedirs(output_dir)
-        
-    for i in range(len(filtered_x) - 1):
-        x1, x2 = filtered_x[i], filtered_x[i+1]
-        col_img = img[:, x1:x2]
-        cv2.imwrite(f"{output_dir}/column_{i}.png", col_img)
-        print(f"Saved column {i} (X: {x1} to {x2})")
+    # 5. Save the chunks
+    if not os.path.exists(output_dir): os.makedirs(output_dir)
+    for i in range(len(breaks) - 1):
+        col_img = img[:, breaks[i]:breaks[i+1]]
+        # Only save columns that aren't just empty noise
+        if col_img.shape[1] > 20:
+            cv2.imwrite(f"{output_dir}/col_{i}.png", col_img)
+            print(f"Saved col_{i}.png (Width: {col_img.shape[1]})")
 
 if __name__ == "__main__":
     slice_ledger_columns("data/cleaned_ledger.png")
